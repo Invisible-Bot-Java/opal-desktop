@@ -74,6 +74,7 @@ const StudioTray = () => {
           {...(onSources && {
             onClick: () => {
               setRecording(true);
+              // @ts-ignore
               StartRecording(onSources);
             },
           })}

@@ -7,6 +7,7 @@ let mediaRecorder: MediaRecorder;
 const socket = io(import.meta.env.VITE_SOCKET_URL);
 
 export const StartRecording = (onScources: {
+  // @ts-ignore
   media: string;
   audio: string;
   id: string;
