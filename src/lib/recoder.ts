@@ -1,33 +1,24 @@
 import { hidePluginWindow } from "./utils";
 import { v4 as uuid } from "uuid";
 import io from "socket.io-client";
-
+let userId: string;
 let videoTransferFileName: string | undefined;
 let mediaRecorder: MediaRecorder;
-let userId: string;
+const socket = io(import.meta.env.VITE_SOCKET_URL);
 
-const socket = io(import.meta.env.VITE_SOCKET_URL as string);
-
-export const StartRecording = (onSources: {
-  screen: string;
-  id: string;
+export const StartRecording = (onScources: {
+  media: string;
   audio: string;
+  id: string;
 }) => {
   hidePluginWindow(true);
-  videoTransferFileName = `${uuid()}-${onSources?.id.slice(0, 8)}.webm`;
+  videoTransferFileName = `${uuid()}-${onScources?.id.slice(0, 8)}.webm`;
   mediaRecorder.start(1000);
 };
-
-export const onStopRecording = () => mediaRecorder.stop();
-
-export const onDataAvailable = async (e: BlobEvent) => {
-  socket.emit("video-chunks", {
-    chunks: e.data,
-    filename: videoTransferFileName,
-  });
+export const onStopRecording = () => {
+  mediaRecorder.stop();
 };
-
-const stopRecording = async () => {
+const stopRecording = () => {
   hidePluginWindow(false);
   socket.emit("process-video", {
     filename: videoTransferFileName,
@@ -35,11 +26,18 @@ const stopRecording = async () => {
   });
 };
 
-export const selectSoources = async (
+export const onDataAvailable = (e: BlobEvent) => {
+  socket.emit("video-chunks", {
+    chunks: e.data,
+    filename: videoTransferFileName,
+  });
+};
+
+export const selectSources = async (
   onSources: {
     screen: string;
-    id: string;
     audio: string;
+    id: string;
     preset: "HD" | "SD";
   },
   videoElement: React.RefObject<HTMLVideoElement>
@@ -50,11 +48,11 @@ export const selectSoources = async (
       video: {
         mandatory: {
           chromeMediaSource: "desktop",
-          chromeMediaSourceId: onSources?.id,
-          minWidth: onSources.preset === "HD" ? 1920 : 1280,
-          maxWidth: onSources.preset === "HD" ? 1920 : 1280,
-          minHeight: onSources.preset === "HD" ? 1080 : 720,
-          maxHeight: onSources.preset === "HD" ? 1080 : 720,
+          chromeMediaSourceId: onSources?.screen,
+          minWidth: onSources?.preset === "HD" ? 1920 : 1280,
+          maxWidth: onSources?.preset === "HD" ? 1920 : 1280,
+          minHeight: onSources?.preset === "HD" ? 1080 : 720,
+          maxHeight: onSources?.preset === "HD" ? 1080 : 720,
           frameRate: 30,
         },
       },
@@ -64,22 +62,17 @@ export const selectSoources = async (
     const audioStream = await navigator.mediaDevices.getUserMedia({
       video: false,
       audio: {
-        deviceId: {
-          exact: onSources.audio,
-        },
+        deviceId: { exact: onSources.audio },
       },
     });
-    console.log("videoElement.current");
-
     if (videoElement && videoElement.current) {
-      console.log(videoElement.current);
-
       videoElement.current.srcObject = stream;
       await videoElement.current.play();
     }
+
     const combinedStream = new MediaStream([
-      ...stream.getVideoTracks(),
-      ...audioStream.getAudioTracks(),
+      ...stream.getTracks(),
+      ...audioStream.getTracks(),
     ]);
 
     mediaRecorder = new MediaRecorder(combinedStream, {

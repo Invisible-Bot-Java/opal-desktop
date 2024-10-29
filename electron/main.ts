@@ -1,4 +1,5 @@
 import { app, BrowserWindow, desktopCapturer, ipcMain } from "electron";
+
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -27,19 +28,18 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 let win: BrowserWindow | null;
 let studio: BrowserWindow | null;
 let floatingWebCam: BrowserWindow | null;
-
 function createWindow() {
   win = new BrowserWindow({
     width: 500,
     height: 600,
     minHeight: 600,
     minWidth: 300,
-    frame: false,
     hasShadow: false,
+    frame: false,
     transparent: true,
     alwaysOnTop: true,
-    focusable: false,
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
+    focusable: true,
+    icon: path.join(process.env.VITE_PUBLIC, "opal-logo.svg"),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -47,10 +47,9 @@ function createWindow() {
       preload: path.join(__dirname, "preload.mjs"),
     },
   });
-
   studio = new BrowserWindow({
     width: 400,
-    height: 300,
+    height: 200,
     minHeight: 70,
     maxHeight: 400,
     minWidth: 300,
@@ -67,14 +66,13 @@ function createWindow() {
       preload: path.join(__dirname, "preload.mjs"),
     },
   });
-
   floatingWebCam = new BrowserWindow({
-    width: 250,
-    height: 250,
-    minHeight: 70,
-    maxHeight: 400,
+    width: 200,
+    height: 200,
+    minHeight: 20,
+    maxHeight: 200,
     minWidth: 200,
-    maxWidth: 400,
+    maxWidth: 200,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -88,23 +86,17 @@ function createWindow() {
     },
   });
 
-  win.setVisibleOnAllWorkspaces(true, {
-    visibleOnFullScreen: true,
-  });
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setAlwaysOnTop(true, "screen-saver", 1);
-  studio.setVisibleOnAllWorkspaces(true, {
-    visibleOnFullScreen: true,
-  });
+  studio.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   studio.setAlwaysOnTop(true, "screen-saver", 1);
-  floatingWebCam.setVisibleOnAllWorkspaces(true, {
-    visibleOnFullScreen: true,
-  });
+  floatingWebCam.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   floatingWebCam.setAlwaysOnTop(true, "screen-saver", 1);
-
   // Test active push message to Renderer-process.
   win.webContents.on("did-finish-load", () => {
     win?.webContents.send("main-process-message", new Date().toLocaleString());
   });
+
   studio.webContents.on("did-finish-load", () => {
     studio?.webContents.send(
       "main-process-message",
@@ -136,7 +128,7 @@ app.on("window-all-closed", () => {
   }
 });
 
-ipcMain.on("closeApp", () => {
+ipcMain.on("close-app", () => {
   if (process.platform !== "darwin") {
     app.quit();
     win = null;
@@ -147,22 +139,18 @@ ipcMain.on("closeApp", () => {
 
 ipcMain.handle("getSources", async () => {
   const data = await desktopCapturer.getSources({
-    thumbnailSize: {
-      height: 100,
-      width: 150,
-    },
+    thumbnailSize: { height: 100, width: 150 },
     fetchWindowIcons: true,
     types: ["window", "screen"],
   });
-
   return data;
 });
-
-ipcMain.on("media-sources", (event, payload) => {
-  studio?.webContents.send("profile-recieved", payload);
+ipcMain.on("media-sources", async (event, payload) => {
+  console.log(event);
+  studio?.webContents.send("profile-received", payload);
 });
-
 ipcMain.on("resize-studio", (event, payload) => {
+  console.log(event);
   if (payload.shrink) {
     studio?.setSize(400, 100);
   }
@@ -170,11 +158,10 @@ ipcMain.on("resize-studio", (event, payload) => {
     studio?.setSize(400, 250);
   }
 });
-
 ipcMain.on("hide-plugin", (event, payload) => {
+  console.log(event);
   win?.webContents.send("hide-plugin", payload);
 });
-
 app.on("activate", () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.

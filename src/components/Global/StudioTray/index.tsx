@@ -1,19 +1,15 @@
-import {
-  onStopRecording,
-  selectSoources,
-  StartRecording,
-} from "@/lib/recorder";
-import { cn, resizeWindow, videoRecodingTime } from "@/lib/utils";
+import { onStopRecording, selectSources, StartRecording } from "@/lib/recoder";
+import { cn, videoRecordingTime } from "@/lib/utils";
 import { Cast, Pause, Square } from "lucide-react";
-import React from "react";
+import { useEffect, useRef, useState } from "react";
 
 const StudioTray = () => {
-  const initial = new Date().getTime();
-  const [preview, setPreview] = React.useState<boolean>(false);
-  const [onTimer, setOnTimer] = React.useState<string>("00:00:00");
-  const [recording, setRecording] = React.useState<boolean>(false);
-  const [count, setCount] = React.useState<number>(0);
-  const [onSources, setOnSources] = React.useState<
+  const initialTime = new Date();
+  const [preview, setPreview] = useState(false);
+  const [onTimer, setOnTimer] = useState<string>("00:00:00");
+  const [recording, setRecording] = useState(false);
+  const [count, setCount] = useState(0);
+  const [onSources, setOnSources] = useState<
     | {
         screen: string;
         id: string;
@@ -23,31 +19,31 @@ const StudioTray = () => {
       }
     | undefined
   >(undefined);
-  window.ipcRenderer.on("profile-recieved", (event, payload) => {
-    setOnSources(payload);
-  });
-
   const clearTime = () => {
     setOnTimer("00:00:00");
     setCount(0);
   };
-  React.useEffect(() => {
-    resizeWindow(preview);
-    return () => resizeWindow(preview);
-  }, [preview]);
-  React.useEffect(() => {
-    if (onSources && onSources.screen) selectSoources(onSources, videoElement);
+  window.ipcRenderer.on("profile-received", (event, payload) => {
+    console.log(event);
+    console.log(payload);
+    setOnSources(payload);
+  });
+
+  const videoElement = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (onSources && onSources.screen) selectSources(onSources, videoElement);
 
     return () => {
-      selectSoources(onSources!, videoElement);
+      selectSources(onSources!, videoElement);
     };
   }, [onSources]);
-  React.useEffect(() => {
+  useEffect(() => {
     if (!recording) return;
     const recordTimeInterval = setInterval(() => {
-      let time = count + (new Date().getTime() - initial);
+      const time = count + new Date().getTime() - initialTime.getTime();
       setCount(time);
-      const recordingTime = videoRecodingTime(time);
+      const recordingTime = videoRecordingTime(time);
       if (onSources?.plan === "FREE" && recordingTime.minute == "05") {
         setRecording(false);
         clearTime();
@@ -61,19 +57,19 @@ const StudioTray = () => {
     }, 1);
     return () => clearInterval(recordTimeInterval);
   }, [recording]);
-  const videoElement = React.useRef<HTMLVideoElement | null>(null);
+
   return !onSources ? (
     <></>
   ) : (
-    <div className="flex flex-col justify-end gap-y-5 h-screen">
+    <div className="flex flex-col justify-end gap-y-5 h-screen ">
       {preview && (
         <video
-          ref={videoElement}
           autoPlay
+          ref={videoElement}
           className={cn("w-6/12 self-end bg-white")}
         />
       )}
-      <div className="flex rounded-full justify-around items-center h-20 w-full border-2 bg-[#171717] draggable border-white/40">
+      <div className="rounded-full flex justify-around items-center h-20 w-full border-2 bg-[#171717] draggable border-white/40">
         <div
           {...(onSources && {
             onClick: () => {
@@ -94,30 +90,30 @@ const StudioTray = () => {
         </div>
         {!recording ? (
           <Pause
+            className="non-draggable opacity-50"
             size={32}
             fill="white"
             stroke="none"
-            className="non-draggable opacity-50"
           />
         ) : (
           <Square
-            size={32}
-            className="non-draggable cursor-pointer hover:scale-110 transform transition duration-150"
-            fill="white"
-            stroke="white"
+            className="non-draggable cursor-pointer hover:scale-110 transition transform duration-150"
             onClick={() => {
               setRecording(false);
               clearTime();
               onStopRecording();
             }}
+            size={32}
+            fill="white"
+            stroke="white"
           />
         )}
         <Cast
-          size={32}
-          className="non-draggable cursor-pointer hover:opacity-60"
-          fill="white"
-          stroke="white"
           onClick={() => setPreview((prev) => !prev)}
+          size={32}
+          fill="white"
+          className="cursor-pointer non-draggable hover:opacity-60"
+          stroke="white"
         />
       </div>
     </div>

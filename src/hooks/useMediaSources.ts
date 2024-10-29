@@ -1,15 +1,15 @@
 import { getMediaSources } from "@/lib/utils";
-import React from "react";
-
+import { useReducer } from "react";
 export type SourceDeviceStateProps = {
   displays?: {
-    appIcon: null;
-    display_id: string;
+    appIcons: null;
+    display: null;
+    displayId: string;
     id: string;
     name: string;
     thumbnail: unknown[];
   }[];
-  audioInputs?: {
+  audioInput?: {
     deviceId: string;
     kind: string;
     label: string;
@@ -18,58 +18,39 @@ export type SourceDeviceStateProps = {
   error?: string | null;
   isPending: boolean;
 };
-
-type DispalyDeviceActionProps = {
+type DisplayDeviceActionProps = {
   type: "GET_DEVICES";
   payload: SourceDeviceStateProps;
 };
-
 export const useMediaSources = () => {
-  const [state, action] = React.useReducer(
-    (state: SourceDeviceStateProps, action: DispalyDeviceActionProps) => {
+  const [state, action] = useReducer(
+    (state: SourceDeviceStateProps, action: DisplayDeviceActionProps) => {
       switch (action.type) {
         case "GET_DEVICES":
-          return {
-            ...state,
-            ...action.payload,
-          };
+          return { ...state, ...action.payload };
         default:
           return state;
       }
     },
     {
       displays: [],
-      audioInputs: [],
+      audioInput: [],
       error: null,
-      isPending: true,
+      isPending: false,
     }
   );
-
-  const fetchMediaResources = async () => {
-    action({
-      type: "GET_DEVICES",
-      payload: {
-        isPending: true,
-      },
-    });
-    getMediaSources()
-      .then((sources) =>
-        action({
-          type: "GET_DEVICES",
-          payload: {
-            displays: sources.displays,
-            audioInputs: sources.audio,
-            isPending: false,
-          },
-        })
-      )
-      .catch((error) => {
-        console.error(error);
+  const fetchMediaResources = () => {
+    action({ type: "GET_DEVICES", payload: { isPending: true } });
+    getMediaSources().then((sources) => {
+      action({
+        type: "GET_DEVICES",
+        payload: {
+          displays: sources.displays,
+          audioInput: sources.audio,
+          isPending: false,
+        },
       });
+    });
   };
-
-  return {
-    state,
-    fetchMediaResources,
-  };
+  return { state, fetchMediaResources };
 };
