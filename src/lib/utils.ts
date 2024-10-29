@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 const httpsClient = axios.create({
   baseURL: import.meta.env.VITE_HOST_URL,
 });
-export const onCloseApp = () => window.ipcRenderer.send("closeApp");
+export const onCloseApp = () => window.ipcRenderer.send("close-app");
 export const fetchUserProfile = async (clerkId: string) => {
   const response = await httpsClient.get(`/auth/${clerkId}`, {
     headers: {

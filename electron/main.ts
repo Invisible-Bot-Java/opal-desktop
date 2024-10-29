@@ -58,7 +58,7 @@ function createWindow() {
     transparent: true,
     alwaysOnTop: true,
     focusable: false,
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
+    icon: path.join(process.env.VITE_PUBLIC, "opal-logo.svg"),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -77,7 +77,7 @@ function createWindow() {
     transparent: true,
     alwaysOnTop: true,
     focusable: false,
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
+    icon: path.join(process.env.VITE_PUBLIC, "opal-logo.svg"),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
